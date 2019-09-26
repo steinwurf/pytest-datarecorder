@@ -1,7 +1,10 @@
-============
-Introduction
-============
+===================
+pytest-datarecorder
+===================
 
+.. image:: https://travis-ci.org/steinwurf/pytest-datarecorder.svg?branch=master
+    :target: https://travis-ci.org/steinwurf/pytest-datarecorder
+    
 Testing code by invoking executable which potentially creates and deletes
 files and directories can be hard and error prone.
 
