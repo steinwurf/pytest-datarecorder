@@ -184,7 +184,7 @@ class TextDataRecorder(object):
         if not has_recording(old_file):
 
             # Save the recording
-            new_data = load_recording(new_file)
+            new_data = load_recording(filename=new_file)
             save_recording(filename=old_file, data=new_data)
 
             return
