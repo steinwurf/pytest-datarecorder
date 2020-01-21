@@ -1,3 +1,0 @@
-[pytest11]
-datarecorder = pytest_datarecorder.fixtures
-
