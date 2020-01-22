@@ -34,6 +34,10 @@ class DataRecorder(object):
             recording should be stored. E.g. /tmp/mismatch note these should NOT
             be placed under version control.
         """
+        # Convert to pathlib objects
+        recording_file = pathlib.Path(recording_file)
+        mismatch_dir = self._prepare_mismatch_dir(mismatch_dir)
+
         # Instantiate the recorder
         recorder = self._prepare_recording(
             recording_file=recording_file, mismatch_dir=mismatch_dir)
@@ -46,10 +50,16 @@ class DataRecorder(object):
         # Convert to pathlib objects
         data_file = pathlib.Path(data_file)
         recording_file = pathlib.Path(recording_file)
+        mismatch_dir = self._prepare_mismatch_dir(mismatch_dir)
 
         if data_file.suffix != recording_file.suffix:
             raise RuntimeError(f'Invalid file format for file {data_file.suffix} '
                                'and recording {recording_file.suffix}')
+
+        # The data file must exist
+        if not data_file.is_file():
+            raise RuntimeError(
+                f'The data file {data_file} must exists.')
 
         # Instantiate the recorder
         recorder = self._prepare_recording(
@@ -60,20 +70,24 @@ class DataRecorder(object):
             data_file=data_file, recording_file=recording_file,
             mismatch_dir=mismatch_dir)
 
-    def _prepare_recording(self, recording_file, mismatch_dir):
-        """ Build the handler for this type of recording. """
+    def _prepare_mismatch_dir(self, mismatch_dir):
 
         # If we do not have a mismatch_dir we provide one
         if mismatch_dir is None:
-            mismatch_dir = pathlib.Path(
-                tempfile.gettempdir()).joinpath('datarecorder')
+            mismatch_dir = os.path.join(tempfile.gettempdir(), 'datarecorder')
+
+        mismatch_dir = pathlib.Path(mismatch_dir)
 
         # If it does not exist we make it
         if not mismatch_dir.is_dir():
             os.makedirs(mismatch_dir)
 
+        return mismatch_dir
+
+    def _prepare_recording(self, recording_file, mismatch_dir):
+        """ Build the handler for this type of recording. """
+
         # Lets look at the recording_file
-        recording_file = pathlib.Path(recording_file)
         recording_dir = recording_file.parent
 
         # The mismatch_dir and recording_dir cannot be the same
@@ -94,11 +108,9 @@ class DataRecorder(object):
 class DataRecorderError(Exception):
     """Basic exception for errors raised when running commands."""
 
-    def __init__(self, filename, recording_path, mismatch_file,
-                 mismatch_data):
-
-        recording_file = os.path.join(recording_path, filename)
-        mismatch_file = os.path.join(mismatch_path, filename)
+    def __init__(self, mismatch_data, mismatch_file,
+                 recording_data, recording_file,
+                 mismatch_dir):
 
         # Unified diff expects a list of strings
         recording_lines = recording_data.split('\n')
@@ -107,8 +119,8 @@ class DataRecorderError(Exception):
         diff = difflib.unified_diff(
             a=recording_lines,
             b=mismatch_lines,
-            fromfile=recording_file,
-            tofile=mismatch_file)
+            fromfile=str(recording_file),
+            tofile=str(mismatch_file))
 
         # Unified_diff(...) returns a generator so we need to force the
         # data by interation - and then convert back to one string
@@ -122,7 +134,7 @@ class DataRecorderError(Exception):
             tolines=mismatch_lines,
             fromdesc=recording_file,
             todesc=mismatch_file)
-        html_file = os.path.join(mismatch_path, 'diff.html')
+        html_file = mismatch_dir.joinpath('diff.html')
 
         with io.open(html_file, 'w', encoding='utf-8') as html_fp:
             html_fp.write(html_diff)
@@ -131,48 +143,9 @@ class DataRecorderError(Exception):
         super(DataRecorderError, self).__init__(result)
 
 
-def save_recording(filepath, data):
-    with io.open(filepath, 'w', encoding='utf-8') as recording_fp:
-        recording_fp.write(data)
-
-
-def has_recording(filepath):
-    return os.path.isfile(filepath)
-
-
-def load_recording(filepath):
-    with io.open(filepath, 'r', encoding='utf-8') as recording_fp:
-        return recording_fp.read()
-
-
-def filename_recording(filepath):
-    _, filename = os.path.split(filepath)
-    return filename
-
-
-def validate_recording(filepath):
-
-    filepath = pathlib.Path(filepath)
-
-
-class BaseDataRecorder(object):
-
-    def __init__(self):
-
-
 class TextDataRecorder(object):
 
-    def __init__(self, mismatch_path):
-        """ Create a new instance.
-
-        :param mismatch_path: Location for storing
-        """
-        self.mismatch_path = mismatch_path
-
-    def serialize_data(self, data):
-        return str(data)
-
-    def record_data(self, new_data, old_filepath):
+    def record_data(self, data, recording_file, mismatch_dir):
         """ Record the data
 
         :param data: Some text to record
@@ -183,63 +156,62 @@ class TextDataRecorder(object):
         """
 
         # No recording exist?
-        if not has_recording(filepath=old_filepath):
+        if not recording_file.is_file():
 
             # Save the recording
-            save_recording(filepath=old_filepath, data=new_data)
-
-            return
+            with io.open(recording_file, 'w', encoding='utf-8') as text_file:
+                text_file.write(data)
+                return
 
         # Check for mismatch
-        old_data = load_recording(filepath=old_filepath)
+        with io.open(recording_file, 'r', encoding='utf-8') as text_file:
+            recording_data = text_file.read()
 
-        if new_data == old_data:
+        if data == recording_data:
             return
 
         # Save the new data in the mismatch path
-        new_filepath = os.path.join(
-            self.mismatch_path, filename_recording(filepath=old_filepath))
+        mismatch_file = mismatch_dir.joinpath(recording_file.name)
 
-        save_recording(filepath=new_filepath, data=new_data)
+        with io.open(mismatch_file, 'w', encoding='utf-8') as text_file:
+            text_file.write(data)
 
         raise DataRecorderError(
-            new_data=new_data, old_data=old_data,
-            new_filepath=new_filepath, old_filepath=old_filepath,
-            mismatch_path=self.mismatch_path)
+            mismatch_data=data, mismatch_file=mismatch_file,
+            recording_data=recording_data, recording_file=recording_file,
+            mismatch_dir=mismatch_dir)
 
-    def record_file(self, new_filepath, old_filepath):
+    def record_file(self, data_file, recording_file, mismatch_dir):
+        """ Check the file content. """
 
-        # No recording exist?
-        if not has_recording(old_filepath):
+        with io.open(data_file, 'r', encoding='utf-8') as text_file:
 
-            # Save the recording
-            new_data = load_recording(filepath=new_filepath)
-            save_recording(filepath=old_filepath, data=new_data)
-
-            return
-
-        # Check for mismatch
-        new_data = load_recording(filepath=new_filepath)
-        old_data = load_recording(filepath=old_filepath)
-
-        if new_data == old_data:
-            return
-
-        raise DataRecorderError(new_data=new_data, old_data=old_data,
-                                new_filepath=new_filepath, old_filepath=old_filepath,
-                                mismatch_path=self.mismatch_path)
+            data = text_file.read()
+            self.record_data(data=data, recording_file=recording_file,
+                             mismatch_dir=mismatch_dir)
 
 
 class JsonDataRecorder(TextDataRecorder):
 
-    def __init__(self, filename, recording_path, mismatch_path):
-        super(JsonDataRecorder, self).__init__(
-            filename, recording_path, mismatch_path)
+    def record_data(self, data, recording_file, mismatch_dir):
 
-    def serialize_data(self, data):
         # Convert the data to json
-        return json.dumps(data, indent=2, sort_keys=True,
+        data = json.dumps(data, indent=2, sort_keys=True,
                           separators=(',', ': '))
+
+        super(JsonDataRecorder, self).record_data(
+            data=data, recording_file=recording_file,
+            mismatch_dir=mismatch_dir)
+
+    def record_file(self, data_file, recording_file, mismatch_dir):
+
+        with io.open(data_file, 'r', encoding='utf-8') as json_file:
+
+            data = json.load(json_file)
+
+            super(JsonDataRecorder, self).record_data(
+                data=data, recording_file=recording_file,
+                mismatch_dir=mismatch_dir)
 
 
 # Extension map for the different output files we support
@@ -247,4 +219,6 @@ extension_map = {
     '.json': JsonDataRecorder,
     '.rst': TextDataRecorder,
     '.txt': TextDataRecorder
+
+
 }
