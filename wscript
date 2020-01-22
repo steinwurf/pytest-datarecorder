@@ -82,8 +82,13 @@ def upload(bld):
 
 def _pytest(bld, venv):
 
-    venv.run('python -m pip install pytest')
-    venv.run('python -m pip install pytest-testdirectory')
+    # To update the requirements.txt just delete it - a fresh one
+    # will be generated from test/requirements.in
+    if not os.path.isfile('test/requirements.txt'):
+        venv.run('python -m pip install pip-tools')
+        venv.run('pip-compile test/requirements.in')
+
+    venv.run('python -m pip install -r test/requirements.txt')
 
     # Install the pytest-testdirectory plugin in the virtualenv
     wheel = _find_wheel(ctx=bld)
