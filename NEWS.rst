@@ -6,6 +6,10 @@ of every change, see the Git log.
 
 Latest
 ------
+* tbd
+
+1.0.1
+-----
 * Patch: Fix syntax in README.rst for upload to pypi.
 
 1.0.0
