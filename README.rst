@@ -12,7 +12,7 @@ Testing code that generates output can be tedious to maintain
    :local:
 
 Installation
-===========
+============
 
 To install pytest-datarecorder::
 

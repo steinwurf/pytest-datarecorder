@@ -48,6 +48,7 @@ setup(
     version=VERSION,
     description=('A py.test plugin recording and comparing test output.'),
     long_description=long_description,
+    long_description_content_type='text/x-rst',
     url='https://github.com/steinwurf/pytest-datarecorder',
     author='Steinwurf ApS',
     author_email='contact@steinwurf.com',

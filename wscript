@@ -93,7 +93,7 @@ def _pytest(bld, venv):
     # Install the pytest-testdirectory plugin in the virtualenv
     wheel = _find_wheel(ctx=bld)
 
-    venv.run('python -m pip install {}'.format(wheel))
+    venv.run(f'python -m pip install {wheel}')
 
     # We override the pytest temp folder with the basetemp option,
     # so the test folders will be available at the specified location
@@ -114,3 +114,6 @@ def _pytest(bld, venv):
     # counter-part has been e.g. deleted
     venv.run('python -B -m pytest {} --basetemp {}'.format(
         testdir.abspath(), basetemp))
+
+    # Check the package
+    venv.run(f'twine check {wheel}')
