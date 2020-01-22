@@ -4,14 +4,9 @@ pytest-datarecorder
 
 .. image:: https://travis-ci.org/steinwurf/pytest-datarecorder.svg?branch=master
     :target: https://travis-ci.org/steinwurf/pytest-datarecorder
-    
-Testing code by invoking executable which potentially creates and deletes
-files and directories can be hard and error prone.
 
-The purpose of this module is to simplify this task.
-
-pytest-testdirectory provides a py.test fixture for working with temporary
-directories.
+Testing code that generates output can be tedious to maintain
+ ``pytest-datarecorder`` aims to simplify this task.
 
 .. contents:: Table of Contents:
    :local:
@@ -32,9 +27,14 @@ injected into a test function by using the datarecorder fixture.
 Example::
 
     def test_this_function(datarecorder):
-        datarecorder.recoding_path = "test/data/recording.json"
-        datarecorder.record(data={'a':1, 'b':2})
 
+        datarecorder.record_data(
+            data={'a':1, 'b':2}, recording_file="test/data/recording.json")
+
+The ``data`` passed will be serialized to JSON since the recording file
+has a ``.json`` extension. If ``data`` changes, we will get an exception
+containing a diff with what changed. If we want to accept the changes
+we simply delete the recording and run the code again.
 
 Relase new version
 ==================

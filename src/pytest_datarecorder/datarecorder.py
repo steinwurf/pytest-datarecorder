@@ -6,6 +6,7 @@ import pprint
 import difflib
 import pytest
 import tempfile
+import pathlib
 
 
 class DataRecorder(object):
@@ -23,68 +24,93 @@ class DataRecorder(object):
     output just delete the existing recording and make a new one.
     """
 
-    def __init__(self):
-        """ Create a new instance.
+    def record_data(self, data, recording_file, mismatch_dir=None):
+        """ Record and compare data with existing recording.
 
-        :param filename: The filename of the recording. Note the extension
+        :param recording_file: The file path to the recording. The extension
             will determine the type of recorder used.
-        :param recording_path: The directory to where the recording should
-            be stored. E.g. /tmp/record note that typically recordings are
-            put under version control.
+            Typically recordings are put under version control.
         :param mismatch_path: The directory to where the mismatched
             recording should be stored. E.g. /tmp/mismatch note these should NOT
             be placed under version control.
         """
+        # Convert to pathlib objects
+        recording_file = pathlib.Path(recording_file)
+        mismatch_dir = self._prepare_mismatch_dir(mismatch_dir)
 
-        self.recording_path = None
-        self.mismatch_path = None
+        # Instantiate the recorder
+        recorder = self._prepare_recording(
+            recording_file=recording_file, mismatch_dir=mismatch_dir)
 
-    def record(self, data):
+        recorder.record_data(
+            data=data, recording_file=recording_file, mismatch_dir=mismatch_dir)
 
-        if self.recording_path is None:
-            raise RuntimeError("You need to provide a path for "
-                               "the recording.")
+    def record_file(self, data_file, recording_file, mismatch_dir=None):
 
-        path, filename = os.path.split(self.recording_path)
+        # Convert to pathlib objects
+        data_file = pathlib.Path(data_file)
+        recording_file = pathlib.Path(recording_file)
+        mismatch_dir = self._prepare_mismatch_dir(mismatch_dir)
 
-        if not os.path.isdir(path):
-            raise RuntimeError("The recording directory {}. Is invalid "
-                               "or does not exist.".format(path))
+        if data_file.suffix != recording_file.suffix:
+            raise RuntimeError(f'Invalid file format for file {data_file.suffix} '
+                               'and recording {recording_file.suffix}')
 
-        _, extension = os.path.splitext(filename)
+        # The data file must exist
+        if not data_file.is_file():
+            raise RuntimeError(
+                f'The data file {data_file} must exists.')
 
-        if not extension in extension_map:
+        # Instantiate the recorder
+        recorder = self._prepare_recording(
+            recording_file=recording_file, mismatch_dir=mismatch_dir)
+
+        # Record the file
+        recorder.record_file(
+            data_file=data_file, recording_file=recording_file,
+            mismatch_dir=mismatch_dir)
+
+    def _prepare_mismatch_dir(self, mismatch_dir):
+
+        # If we do not have a mismatch_dir we provide one
+        if mismatch_dir is None:
+            mismatch_dir = os.path.join(tempfile.gettempdir(), 'datarecorder')
+
+        mismatch_dir = pathlib.Path(mismatch_dir)
+
+        # If it does not exist we make it
+        if not mismatch_dir.is_dir():
+            os.makedirs(mismatch_dir)
+
+        return mismatch_dir
+
+    def _prepare_recording(self, recording_file, mismatch_dir):
+        """ Build the handler for this type of recording. """
+
+        # Lets look at the recording_file
+        recording_dir = recording_file.parent
+
+        # The mismatch_dir and recording_dir cannot be the same
+        if recording_dir == mismatch_dir:
+            raise RuntimeError(
+                f'Recording and mismatch directory cannot be the same. '
+                'was {recording_dir} and {mismatch_dir}')
+
+        # Build the actual recorder
+        if not recording_file.suffix in extension_map:
             raise NotImplementedError("We have no mapping for {}".format(
-                extension))
+                recording_file.suffix))
 
-        recorder_cls = extension_map[extension]
-
-        mismatch_path = self.mismatch_path
-
-        if mismatch_path is None:
-            mismatch_path = os.path.join(tempfile.gettempdir(),
-                                         'datarecorder')
-
-        assert path != mismatch_path
-
-        if not os.path.isdir(mismatch_path):
-            os.makedirs(mismatch_path)
-
-        recorder = recorder_cls(filename=filename,
-                                recording_path=path,
-                                mismatch_path=mismatch_path)
-
-        recorder.record(data=data)
+        recorder_class = extension_map[recording_file.suffix]
+        return recorder_class()
 
 
 class DataRecorderError(Exception):
     """Basic exception for errors raised when running commands."""
 
-    def __init__(self, filename, recording_path, recording_data, mismatch_path,
-                 mismatch_data):
-
-        recording_file = os.path.join(recording_path, filename)
-        mismatch_file = os.path.join(mismatch_path, filename)
+    def __init__(self, mismatch_data, mismatch_file,
+                 recording_data, recording_file,
+                 mismatch_dir):
 
         # Unified diff expects a list of strings
         recording_lines = recording_data.split('\n')
@@ -93,10 +119,10 @@ class DataRecorderError(Exception):
         diff = difflib.unified_diff(
             a=recording_lines,
             b=mismatch_lines,
-            fromfile=recording_file,
-            tofile=mismatch_file)
+            fromfile=str(recording_file),
+            tofile=str(mismatch_file))
 
-        # unified_diff(...) returns a generator so we need to force the
+        # Unified_diff(...) returns a generator so we need to force the
         # data by interation - and then convert back to one string
         diff = "\n".join(list(diff))
 
@@ -108,70 +134,84 @@ class DataRecorderError(Exception):
             tolines=mismatch_lines,
             fromdesc=recording_file,
             todesc=mismatch_file)
-        html_file = os.path.join(mismatch_path, 'diff.html')
+        html_file = mismatch_dir.joinpath('diff.html')
 
         with io.open(html_file, 'w', encoding='utf-8') as html_fp:
             html_fp.write(html_diff)
 
         result = "Diff:\n{}\nHTML diff:\n{}".format(diff, html_file)
-
         super(DataRecorderError, self).__init__(result)
 
 
 class TextDataRecorder(object):
 
-    def __init__(self, filename, recording_path, mismatch_path):
-        self.filename = filename
-        self.recording_path = recording_path
-        self.mismatch_path = mismatch_path
+    def record_data(self, data, recording_file, mismatch_dir):
+        """ Record the data
 
-    def record(self, data):
+        :param data: Some text to record
+        :param recording_file: An existing recording to compare with. If no
+            previous recording exists we save our data to file.
+        :param mismatch_file: If an existing recording exist we save the data
+            to the mismatch file for later inspection.
+        """
 
-        if sys.version_info < (3, 0):
-            # Convert to unicode
-            data = data.decode('utf-8')
+        # No recording exist?
+        if not recording_file.is_file():
 
-        recording_file = os.path.join(self.recording_path, self.filename)
-        mismatch_file = os.path.join(self.mismatch_path, self.filename)
-
-        if not os.path.isfile(recording_file):
-
-            with io.open(recording_file, 'w', encoding='utf-8') as recording_fp:
-                recording_fp.write(data)
+            # Save the recording
+            with io.open(recording_file, 'w', encoding='utf-8') as text_file:
+                text_file.write(data)
 
             return
 
-        # A recording exists
-        with io.open(recording_file, 'r', encoding='utf-8') as recording_fp:
-            recording_data = recording_fp.read()
+        # Check for mismatch
+        with io.open(recording_file, 'r', encoding='utf-8') as text_file:
+            recording_data = text_file.read()
 
-        assert type(recording_data) == type(data)
-        if recording_data == data:
+        if data == recording_data:
             return
 
-        # There is a recording mismatch
-        with io.open(mismatch_file, 'w', encoding='utf-8') as mismatch_fp:
-            mismatch_fp.write(data)
+        # Save the new data in the mismatch path
+        mismatch_file = mismatch_dir.joinpath(recording_file.name)
+
+        with io.open(mismatch_file, 'w', encoding='utf-8') as text_file:
+            text_file.write(data)
 
         raise DataRecorderError(
-            filename=self.filename,
-            recording_path=self.recording_path, recording_data=recording_data,
-            mismatch_path=self.mismatch_path, mismatch_data=data)
+            mismatch_data=data, mismatch_file=mismatch_file,
+            recording_data=recording_data, recording_file=recording_file,
+            mismatch_dir=mismatch_dir)
+
+    def record_file(self, data_file, recording_file, mismatch_dir):
+        """ Check the file content. """
+
+        with io.open(data_file, 'r', encoding='utf-8') as text_file:
+            data = text_file.read()
+
+        self.record_data(data=data, recording_file=recording_file,
+                         mismatch_dir=mismatch_dir)
 
 
-class JsonDataRecorder(TextDataRecorder):
+class JsonDataRecorder(object):
 
-    def __init__(self, filename, recording_path, mismatch_path):
-        super(JsonDataRecorder, self).__init__(
-            filename, recording_path, mismatch_path)
+    def __init__(self):
+        self.text_recorder = TextDataRecorder()
 
-    def record(self, data):
+    def record_data(self, data, recording_file, mismatch_dir):
 
         # Convert the data to json
         data = json.dumps(data, indent=2, sort_keys=True,
                           separators=(',', ': '))
 
-        super(JsonDataRecorder, self).record(data=data)
+        self.text_recorder.record_data(
+            data=data, recording_file=recording_file,
+            mismatch_dir=mismatch_dir)
+
+    def record_file(self, data_file, recording_file, mismatch_dir):
+
+        self.text_recorder.record_file(
+            data_file=data_file, recording_file=recording_file,
+            mismatch_dir=mismatch_dir)
 
 
 # Extension map for the different output files we support
@@ -179,4 +219,6 @@ extension_map = {
     '.json': JsonDataRecorder,
     '.rst': TextDataRecorder,
     '.txt': TextDataRecorder
+
+
 }

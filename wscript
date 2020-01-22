@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 
+from waflib.Build import BuildContext
 import os
 import sys
 import shutil
@@ -15,8 +16,6 @@ import waflib
 top = '.'
 
 VERSION = '0.0.0'
-
-from waflib.Build import BuildContext
 
 
 class UploadContext(BuildContext):
@@ -38,24 +37,23 @@ def options(opt):
 def build(bld):
 
     # Create a virtualenv in the source folder and build universal wheel
-    venv = bld.create_virtualenv(cwd=bld.path.abspath())
 
-    with venv:
-        venv.run('pip install wheel')
+    with bld.create_virtualenv() as venv:
+        venv.run('python -m pip install wheel')
         venv.run('python setup.py bdist_wheel --universal')
+
+        # Run the unit-tests
+        if bld.options.run_tests:
+            _pytest(bld=bld, venv=venv)
 
     # Delete the egg-info directory, do not understand why this is created
     # when we build a wheel. But, it is - perhaps in the future there will
     # be some way to disable its creation.
     egg_info = os.path.join(
-        bld.path.abspath(), 'pytest_testdirectory.egg-info')
+        bld.srcnode.abspath(), 'src', 'pytest_datarecorder.egg-info')
 
     if os.path.isdir(egg_info):
         waflib.extras.wurf.directory.remove_directory(path=egg_info)
-
-    # Run the unit-tests
-    if bld.options.run_tests:
-        _pytest(bld=bld)
 
 
 def _find_wheel(ctx):
@@ -74,46 +72,45 @@ def _find_wheel(ctx):
 def upload(bld):
     """ Upload the built wheel to PyPI (the Python Package Index) """
 
-    venv = bld.create_virtualenv(cwd=bld.bldnode.abspath())
-
-    with venv:
-        venv.run('pip install twine')
+    with bld.create_virtualenv() as venv:
+        venv.run('python -m pip install twine')
 
         wheel = _find_wheel(ctx=bld)
 
         venv.run('python -m twine upload {}'.format(wheel))
 
 
-def _pytest(bld):
+def _pytest(bld, venv):
 
-    # Create the virtualenv in the build folder to make sure we run
-    # isolated from the sources
-    venv = bld.create_virtualenv(cwd=bld.bldnode.abspath())
+    # To update the requirements.txt just delete it - a fresh one
+    # will be generated from test/requirements.in
+    if not os.path.isfile('test/requirements.txt'):
+        venv.run('python -m pip install pip-tools')
+        venv.run('pip-compile test/requirements.in')
 
-    with venv:
-        venv.run('pip install pytest pytest-testdirectory')
+    venv.run('python -m pip install -r test/requirements.txt')
 
-        # Install the pytest-testdirectory plugin in the virtualenv
-        wheel = _find_wheel(ctx=bld)
+    # Install the pytest-testdirectory plugin in the virtualenv
+    wheel = _find_wheel(ctx=bld)
 
-        venv.run('pip install {}'.format(wheel))
+    venv.run('python -m pip install {}'.format(wheel))
 
-        # We override the pytest temp folder with the basetemp option,
-        # so the test folders will be available at the specified location
-        # on all platforms. The default location is the "pytest" local folder.
-        basetemp = os.path.abspath(os.path.expanduser(
-            bld.options.pytest_basetemp))
+    # We override the pytest temp folder with the basetemp option,
+    # so the test folders will be available at the specified location
+    # on all platforms. The default location is the "pytest" local folder.
+    basetemp = os.path.abspath(os.path.expanduser(
+        bld.options.pytest_basetemp))
 
-        # We need to manually remove the previously created basetemp folder,
-        # because pytest uses os.listdir in the removal process, and that fails
-        # if there are any broken symlinks in that folder.
-        if os.path.exists(basetemp):
-            waflib.extras.wurf.directory.remove_directory(path=basetemp)
+    # We need to manually remove the previously created basetemp folder,
+    # because pytest uses os.listdir in the removal process, and that fails
+    # if there are any broken symlinks in that folder.
+    if os.path.exists(basetemp):
+        waflib.extras.wurf.directory.remove_directory(path=basetemp)
 
-        testdir = bld.path.find_node('test')
+    testdir = bld.path.find_node('test')
 
-        # Make python not write any .pyc files. These may linger around
-        # in the file system and make some tests pass although their .py
-        # counter-part has been e.g. deleted
-        venv.run('python -B -m pytest {} --basetemp {}'.format(
-            testdir.abspath(), basetemp))
+    # Make python not write any .pyc files. These may linger around
+    # in the file system and make some tests pass although their .py
+    # counter-part has been e.g. deleted
+    venv.run('python -B -m pytest {} --basetemp {}'.format(
+        testdir.abspath(), basetemp))
