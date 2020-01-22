@@ -52,3 +52,21 @@ def test_record_no_mapping(testdirectory, datarecorder):
 
         datarecorder.record_data(
             data="{'foo': 2, 'bar': 3}", recording_file=recording_file)
+
+
+def test_file_record(testdirectory, datarecorder):
+
+    recording_dir = testdirectory.mkdir('recording')
+    recording_file = os.path.join(recording_dir.path(), 'test.json')
+
+    # Check that the recording is made
+    assert not recording_dir.contains_file('test.json')
+
+    datarecorder.record_file(
+        data_file='test/data/test.json', recording_file=recording_file)
+
+    # Check that we match the recording
+    assert recording_dir.contains_file('test.json')
+
+    datarecorder.record_file(
+        data_file='test/data/test.json', recording_file=recording_file)

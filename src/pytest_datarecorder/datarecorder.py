@@ -161,7 +161,8 @@ class TextDataRecorder(object):
             # Save the recording
             with io.open(recording_file, 'w', encoding='utf-8') as text_file:
                 text_file.write(data)
-                return
+
+            return
 
         # Check for mismatch
         with io.open(recording_file, 'r', encoding='utf-8') as text_file:
@@ -185,13 +186,16 @@ class TextDataRecorder(object):
         """ Check the file content. """
 
         with io.open(data_file, 'r', encoding='utf-8') as text_file:
-
             data = text_file.read()
-            self.record_data(data=data, recording_file=recording_file,
-                             mismatch_dir=mismatch_dir)
+
+        self.record_data(data=data, recording_file=recording_file,
+                         mismatch_dir=mismatch_dir)
 
 
-class JsonDataRecorder(TextDataRecorder):
+class JsonDataRecorder(object):
+
+    def __init__(self):
+        self.text_recorder = TextDataRecorder()
 
     def record_data(self, data, recording_file, mismatch_dir):
 
@@ -199,19 +203,15 @@ class JsonDataRecorder(TextDataRecorder):
         data = json.dumps(data, indent=2, sort_keys=True,
                           separators=(',', ': '))
 
-        super(JsonDataRecorder, self).record_data(
+        self.text_recorder.record_data(
             data=data, recording_file=recording_file,
             mismatch_dir=mismatch_dir)
 
     def record_file(self, data_file, recording_file, mismatch_dir):
 
-        with io.open(data_file, 'r', encoding='utf-8') as json_file:
-
-            data = json.load(json_file)
-
-            super(JsonDataRecorder, self).record_data(
-                data=data, recording_file=recording_file,
-                mismatch_dir=mismatch_dir)
+        self.text_recorder.record_file(
+            data_file=data_file, recording_file=recording_file,
+            mismatch_dir=mismatch_dir)
 
 
 # Extension map for the different output files we support
