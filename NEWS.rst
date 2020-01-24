@@ -6,6 +6,10 @@ of every change, see the Git log.
 
 Latest
 ------
+* tbd
+
+1.1.0
+-----
 * Minor: Added support for ``html`` files.
 
 1.0.1
