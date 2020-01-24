@@ -218,7 +218,6 @@ class JsonDataRecorder(object):
 extension_map = {
     '.json': JsonDataRecorder,
     '.rst': TextDataRecorder,
-    '.txt': TextDataRecorder
-
-
+    '.txt': TextDataRecorder,
+    '.html': TextDataRecorder
 }
