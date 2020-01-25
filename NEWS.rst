@@ -6,7 +6,7 @@ of every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Minor: For JSON recording support custom types like pathlib.Path objects.
 
 1.1.0
 -----
