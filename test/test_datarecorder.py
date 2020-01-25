@@ -1,6 +1,7 @@
 import pytest_datarecorder
 import os
 import pytest
+import pathlib
 
 
 def test_record_json(testdirectory, datarecorder):
@@ -70,3 +71,21 @@ def test_file_record(testdirectory, datarecorder):
 
     datarecorder.record_file(
         data_file='test/data/test.json', recording_file=recording_file)
+
+
+def test_record_pathlib_path(testdirectory, datarecorder):
+
+    recording_dir = testdirectory.mkdir('recording')
+    recording_file = os.path.join(recording_dir.path(), 'test.json')
+
+    # Check that the recording is made
+    assert not recording_dir.contains_file('test.json')
+
+    data = [pathlib.Path('test/data/test.json')]
+
+    datarecorder.record_data(data=data, recording_file=recording_file)
+
+    # Check that we match the recording
+    assert recording_dir.contains_file('test.json')
+
+    datarecorder.record_data(data=data, recording_file=recording_file)

@@ -199,9 +199,15 @@ class JsonDataRecorder(object):
 
     def record_data(self, data, recording_file, mismatch_dir):
 
+        def default(data):
+            """ The JSON module will call this function for types it does
+                not know. We just convert to string an pray it works :)
+            """
+            return str(data)
+
         # Convert the data to json
         data = json.dumps(data, indent=2, sort_keys=True,
-                          separators=(',', ': '))
+                          separators=(',', ': '), default=default)
 
         self.text_recorder.record_data(
             data=data, recording_file=recording_file,
