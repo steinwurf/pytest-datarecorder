@@ -6,6 +6,10 @@ of every change, see the Git log.
 
 Latest
 ------
+* tbd
+
+1.3.0
+-----
 * Minor: Added support for passing a recording_type to the data recorder. This
   makes it possible to record into files / data that do not have a files
   extension.
