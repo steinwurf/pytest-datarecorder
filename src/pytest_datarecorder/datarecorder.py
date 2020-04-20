@@ -24,7 +24,8 @@ class DataRecorder(object):
     output just delete the existing recording and make a new one.
     """
 
-    def record_data(self, data, recording_file, mismatch_dir=None):
+    def record_data(self, data, recording_file, mismatch_dir=None,
+                    recording_type=None):
         """ Record and compare data with existing recording.
 
         :param recording_file: The file path to the recording. The extension
@@ -33,6 +34,9 @@ class DataRecorder(object):
         :param mismatch_path: The directory to where the mismatched
             recording should be stored. E.g. /tmp/mismatch note these should NOT
             be placed under version control.
+        :param recording_type: The recording type to use. In cases where the
+            recording_file does not have an file extension, then the recording
+            type can be specified here.
         """
         # Convert to pathlib objects
         recording_file = pathlib.Path(recording_file)
@@ -40,21 +44,31 @@ class DataRecorder(object):
 
         # Instantiate the recorder
         recorder = self._prepare_recording(
-            recording_file=recording_file, mismatch_dir=mismatch_dir)
+            recording_file=recording_file, mismatch_dir=mismatch_dir,
+            recording_type=recording_type)
 
         recorder.record_data(
             data=data, recording_file=recording_file, mismatch_dir=mismatch_dir)
 
-    def record_file(self, data_file, recording_file, mismatch_dir=None):
+    def record_file(self, data_file, recording_file, mismatch_dir=None,
+                    recording_type=None):
+        """ Record and compare data with existing recording.
 
+        :param data_file: The input file contaning the data to be recorded
+        :param recording_file: The file path to the recording. The extension
+            will determine the type of recorder used.
+            Typically recordings are put under version control.
+        :param mismatch_path: The directory to where the mismatched
+            recording should be stored. E.g. /tmp/mismatch note these should NOT
+            be placed under version control.
+        :param recording_type: The recording type to use. In cases where the
+            recording_file does not have an file extension, then the recording
+            type can be specified here.
+        """
         # Convert to pathlib objects
         data_file = pathlib.Path(data_file)
         recording_file = pathlib.Path(recording_file)
         mismatch_dir = self._prepare_mismatch_dir(mismatch_dir)
-
-        if data_file.suffix != recording_file.suffix:
-            raise RuntimeError(f'Invalid file format for file {data_file.suffix} '
-                               'and recording {recording_file.suffix}')
 
         # The data file must exist
         if not data_file.is_file():
@@ -63,7 +77,8 @@ class DataRecorder(object):
 
         # Instantiate the recorder
         recorder = self._prepare_recording(
-            recording_file=recording_file, mismatch_dir=mismatch_dir)
+            recording_file=recording_file, mismatch_dir=mismatch_dir,
+            recording_type=recording_type)
 
         # Record the file
         recorder.record_file(
@@ -84,7 +99,7 @@ class DataRecorder(object):
 
         return mismatch_dir
 
-    def _prepare_recording(self, recording_file, mismatch_dir):
+    def _prepare_recording(self, recording_file, mismatch_dir, recording_type):
         """ Build the handler for this type of recording. """
 
         # Lets look at the recording_file
@@ -96,12 +111,17 @@ class DataRecorder(object):
                 f'Recording and mismatch directory cannot be the same. '
                 'was {recording_dir} and {mismatch_dir}')
 
-        # Build the actual recorder
-        if not recording_file.suffix in extension_map:
-            raise NotImplementedError("We have no mapping for {}".format(
-                recording_file.suffix))
+        # If we have no recording type use the file extension
+        if not recording_type:
+            # Also drop the '.' in the suffix
+            recording_type = recording_file.suffix[1:]
 
-        recorder_class = extension_map[recording_file.suffix]
+        # Build the actual recorder
+        if not recording_type in extension_map:
+            raise NotImplementedError("We have no mapping for {}".format(
+                recording_type))
+
+        recorder_class = extension_map[recording_type]
         return recorder_class()
 
 
@@ -222,8 +242,8 @@ class JsonDataRecorder(object):
 
 # Extension map for the different output files we support
 extension_map = {
-    '.json': JsonDataRecorder,
-    '.rst': TextDataRecorder,
-    '.txt': TextDataRecorder,
-    '.html': TextDataRecorder
+    'json': JsonDataRecorder,
+    'rst': TextDataRecorder,
+    'txt': TextDataRecorder,
+    'html': TextDataRecorder
 }

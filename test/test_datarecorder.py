@@ -89,3 +89,23 @@ def test_record_pathlib_path(testdirectory, datarecorder):
     assert recording_dir.contains_file('test.json')
 
     datarecorder.record_data(data=data, recording_file=recording_file)
+
+
+def test_recording_type(testdirectory, datarecorder):
+
+    input_dir = testdirectory.mkdir('input')
+    input_file = input_dir.write_text(
+        filename="noextension", data="hello", encoding="utf-8")
+
+    recording_dir = testdirectory.mkdir('recording')
+    recording_file = os.path.join(recording_dir.path(), 'noextension')
+
+    # Check that the recording is made
+    assert not recording_dir.contains_file('noextension')
+
+    datarecorder.record_file(
+        data_file=input_file, recording_file=recording_file,
+        recording_type='txt')
+
+    # Check that we match the recording
+    assert recording_dir.contains_file('noextension')
