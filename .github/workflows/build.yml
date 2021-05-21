@@ -1,6 +1,23 @@
 name: Tests
 on: [push, pull_request]
 jobs:
+  syntax:
+    strategy:
+      fail-fast: false
+    runs-on: [self-hosted, docker]
+    name: Pyflakes Syntax Check
+    container:
+      image: python:3.9.5
+      options: --user 0:0
+      volumes:
+        - /home/buildbot/.ssh:/root/.ssh
+    steps:
+      - name: Install SSH client
+        run: apt update && apt -y install openssh-client
+      - name: Checkout source code
+        uses: actions/checkout@v2
+      - name: Check python syntax
+        uses: lgeiger/pyflakes-action@master
   # Pip install performed in docker
   pip:
     strategy:
