@@ -16,7 +16,7 @@ charset-normalizer==2.0.9
     # via requests
 colorama==0.4.4
     # via twine
-cryptography==36.0.0
+cryptography==36.0.1
     # via secretstorage
 docutils==0.18.1
     # via readme-renderer
@@ -56,7 +56,7 @@ pytest==6.2.5
     #   pytest-testdirectory
 pytest-testdirectory==3.1.0
     # via -r test/requirements.in
-readme-renderer==30.0
+readme-renderer==32.0
     # via twine
 requests==2.26.0
     # via
@@ -74,7 +74,7 @@ toml==0.10.2
     # via pytest
 tqdm==4.62.3
     # via twine
-twine==3.7.0
+twine==3.7.1
     # via -r test/requirements.in
 urllib3==1.26.7
     # via requests
