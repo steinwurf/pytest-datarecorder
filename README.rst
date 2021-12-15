@@ -2,8 +2,22 @@
 pytest-datarecorder
 ===================
 
-.. image:: https://travis-ci.org/steinwurf/pytest-datarecorder.svg?branch=master
-    :target: https://travis-ci.org/steinwurf/pytest-datarecorder
+|PyPi| |Waf Python Tests| |Black| |Flake8| |Pip Install|
+
+.. |PyPi| image:: https://badge.fury.io/py/pytest-datarecorder.svg
+    :target: https://badge.fury.io/py/pytest-datarecorder
+
+.. |Waf Python Tests| image:: https://github.com/steinwurf/pytest-datarecorder/actions/workflows/python-waf.yml/badge.svg
+   :target: https://github.com/steinwurf/pytest-datarecorder/actions/workflows/python-waf.yml
+
+.. |Flake8| image:: https://github.com/steinwurf/pytest-datarecorder/actions/workflows/flake.yml/badge.svg
+    :target: https://github.com/steinwurf/pytest-datarecorder/actions/workflows/flake.yml
+
+.. |Black| image:: https://github.com/steinwurf/pytest-datarecorder/actions/workflows/black.yml/badge.svg
+      :target: https://github.com/steinwurf/pytest-datarecorder/actions/workflows/black.yml
+
+.. |Pip Install| image:: https://github.com/steinwurf/pytest-datarecorder/actions/workflows/pip.yml/badge.svg
+      :target: https://github.com/steinwurf/pytest-datarecorder/actions/workflows/pip.yml
 
 Testing code that generates output can be tedious to maintain
  ``pytest-datarecorder`` aims to simplify this task.
