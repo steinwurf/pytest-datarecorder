@@ -83,6 +83,16 @@ def upload(bld):
         venv.run("python -m twine upload {}".format(wheel))
 
 
+def prepare_release(ctx):
+    """Prepare a release."""
+
+    with ctx.rewrite_file(filename="setup.py") as f:
+        pattern = r'VERSION = "\d+\.\d+\.\d+"'
+        replacement = f'VERSION = "{VERSION}"'
+
+        f.regex_replace(pattern=pattern, replacement=replacement)
+
+
 def _pytest(bld, venv):
 
     # To update the requirements.txt just delete it - a fresh one
@@ -92,12 +102,12 @@ def _pytest(bld, venv):
         requirements_in="test/requirements.in", requirements_txt="test/requirements.txt"
     )
 
-    venv.run("python -m pip install -r test/requirements.txt")
+    venv.run("python3 -m pip install -r test/requirements.txt")
 
     # Install the pytest-testdirectory plugin in the virtualenv
     wheel = _find_wheel(ctx=bld)
 
-    venv.run(f"python -m pip install {wheel}")
+    venv.run(f"python3 -m pip install {wheel}")
 
     # We override the pytest temp folder with the basetemp option,
     # so the test folders will be available at the specified location
@@ -115,7 +125,7 @@ def _pytest(bld, venv):
     # Make python not write any .pyc files. These may linger around
     # in the file system and make some tests pass although their .py
     # counter-part has been e.g. deleted
-    venv.run(f"python -B -m pytest {testdir.abspath()} --basetemp {basetemp}")
+    venv.run(f"python3 -B -m pytest {testdir.abspath()} --basetemp {basetemp}")
 
     # Check the package
     venv.run(f"twine check {wheel}")
