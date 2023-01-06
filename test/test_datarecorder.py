@@ -2,6 +2,7 @@ import pytest_datarecorder
 import os
 import pytest
 import pathlib
+import json
 
 
 def test_record_json(testdirectory, datarecorder):
@@ -109,3 +110,37 @@ def test_recording_type(testdirectory, datarecorder):
 
     # Check that we match the recording
     assert recording_dir.contains_file("noextension")
+
+
+def test_record_mismatch(testdirectory, datarecorder):
+
+    recording_path = testdirectory.mkdir("recording")
+    recording_file = os.path.join(recording_path.path(), "test.json")
+
+    datarecorder.record_data(data=[1, 2, 3, 4, 5], recording_file=recording_file)
+
+    # Calling again with same data should be fine
+    datarecorder.record_data(data=[1, 2, 3, 4, 5], recording_file=recording_file)
+
+    mismatch_index = []
+
+    def on_mismatch(mismatch_data, recording_data, mismatch_dir):
+
+        mismatch_data = json.loads(mismatch_data)
+        recording_data = json.loads(recording_data)
+
+        for i, (d, r) in enumerate(zip(mismatch_data, recording_data)):
+            if d != r:
+                mismatch_index.append(i)
+
+        return f"Data mismatch at index {mismatch_index}"
+
+    with pytest.raises(pytest_datarecorder.datarecorder.DataRecorderError) as e:
+        datarecorder.record_data(
+            data=[5, 2, 3, 1, 5],
+            recording_file=recording_file,
+            mismatch_callback=on_mismatch,
+        )
+
+    assert "Data mismatch at index [0, 3]" in str(e.value)
+    assert mismatch_index == [0, 3]
