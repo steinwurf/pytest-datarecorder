@@ -172,6 +172,3 @@ def test_record_mismatch(testdirectory, datarecorder):
 
     # Check that the mismatch directory contains the files
     assert mismatch_dir.contains_file("scatter.png")
-
-    print(e)
-    assert False
