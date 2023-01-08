@@ -10,40 +10,7 @@ cwd = os.path.abspath(os.path.dirname(__file__))
 with io.open(os.path.join(cwd, "README.rst"), encoding="utf-8") as fd:
     long_description = fd.read()
 
-with io.open(os.path.join(cwd, "wscript"), encoding="utf-8") as fd:
-
-    VERSION = None
-
-    regex = re.compile(
-        r"""
-    (                # Group and match
-        VERSION      #    Match 'VERSION'
-        \s*          #    Match zero or more spaces
-        =            #    Match and equal sign
-        \s*          #    Match zero or more spaces
-    )                # End group
-
-    '
-    (                # Group and match
-         \d\.\d\.\d  #    Match digit.digit.digit e.g. 1.2.3
-    )                # End of group
-    '
-    """,
-        re.VERBOSE,
-    )
-
-    for line in fd:
-
-        match = regex.match(line)
-        if not match:
-            continue
-
-        # The second parenthesized subgroup.
-        VERSION = match.group(2)
-        break
-
-    else:
-        sys.exit("No VERSION variable defined in wscript - aborting!")
+VERSION = "1.3.0"
 
 setup(
     name="pytest-datarecorder",

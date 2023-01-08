@@ -6,7 +6,8 @@ of every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Minor: Adding support for mismatch callback functions. The will allow custom
+  handling of mismatched data.
 
 1.3.0
 -----

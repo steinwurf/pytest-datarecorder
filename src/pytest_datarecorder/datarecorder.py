@@ -24,18 +24,34 @@ class DataRecorder(object):
     output just delete the existing recording and make a new one.
     """
 
-    def record_data(self, data, recording_file, mismatch_dir=None, recording_type=None):
+    def record_data(
+        self,
+        data,
+        recording_file,
+        mismatch_dir=None,
+        recording_type=None,
+        mismatch_callback=None,
+    ):
         """Record and compare data with existing recording.
 
         :param recording_file: The file path to the recording. The extension
-            will determine the type of recorder used.
-            Typically recordings are put under version control.
-        :param mismatch_path: The directory to where the mismatched
-            recording should be stored. E.g. /tmp/mismatch note these should NOT
-            be placed under version control.
+            will determine the type of recorder used. Typically recordings are
+            put under version control.
+        :param mismatch_path: The directory to where the mismatched recording
+            should be stored. E.g. /tmp/mismatch note these should NOT be placed
+            under version control.
         :param recording_type: The recording type to use. In cases where the
             recording_file does not have an file extension, then the recording
             type can be specified here.
+        :param mismatch_callback: A callback function that will be called when
+            a mismatch is detected. The callback will be called with the
+            following arguments:
+                - recording_data as a string (the data that was in the recording)
+                - mismatch_data as a string (the data that was recorded)
+                - mismatch_dir as a string (store mismatch artifacts here)
+            The callback can return a string that will be used in the
+            mismatch error message.
+
         """
         # Convert to pathlib objects
         recording_file = pathlib.Path(recording_file)
@@ -49,15 +65,23 @@ class DataRecorder(object):
         )
 
         recorder.record_data(
-            data=data, recording_file=recording_file, mismatch_dir=mismatch_dir
+            data=data,
+            recording_file=recording_file,
+            mismatch_dir=mismatch_dir,
+            mismatch_callback=mismatch_callback,
         )
 
     def record_file(
-        self, data_file, recording_file, mismatch_dir=None, recording_type=None
+        self,
+        data_file,
+        recording_file,
+        mismatch_dir=None,
+        recording_type=None,
+        mismatch_callback=None,
     ):
         """Record and compare data with existing recording.
 
-        :param data_file: The input file contaning the data to be recorded
+        :param data_file: The input file containing the data to be recorded
         :param recording_file: The file path to the recording. The extension
             will determine the type of recorder used.
             Typically recordings are put under version control.
@@ -67,6 +91,15 @@ class DataRecorder(object):
         :param recording_type: The recording type to use. In cases where the
             recording_file does not have an file extension, then the recording
             type can be specified here.
+        :param mismatch_callback: A callback function that will be called when
+            a mismatch is detected. The callback will be called with the
+            following arguments:
+                - recording_data as a string (the data that was in the recording)
+                - mismatch_data as a string (the data that was recorded)
+                - mismatch_dir as a string (store mismatch artifacts here)
+            The callback can return a string that will be used in the
+            mismatch error message.
+
         """
         # Convert to pathlib objects
         data_file = pathlib.Path(data_file)
@@ -89,6 +122,7 @@ class DataRecorder(object):
             data_file=data_file,
             recording_file=recording_file,
             mismatch_dir=mismatch_dir,
+            mismatch_callback=mismatch_callback,
         )
 
     def _prepare_mismatch_dir(self, mismatch_dir):
@@ -137,7 +171,13 @@ class DataRecorderError(Exception):
     """Basic exception for errors raised when running commands."""
 
     def __init__(
-        self, mismatch_data, mismatch_file, recording_data, recording_file, mismatch_dir
+        self,
+        mismatch_data,
+        mismatch_file,
+        recording_data,
+        recording_file,
+        mismatch_dir,
+        user_error,
     ):
 
         # Unified diff expects a list of strings
@@ -169,12 +209,16 @@ class DataRecorderError(Exception):
         with io.open(html_file, "w", encoding="utf-8") as html_fp:
             html_fp.write(html_diff)
 
-        result = "Diff:\n{}\nHTML diff:\n{}".format(diff, html_file)
+        result = "Diff:\n{}\nHTML diff:\n{}\n".format(diff, html_file)
+
+        if user_error:
+            result += f"{user_error}\n"
+
         super(DataRecorderError, self).__init__(result)
 
 
 class TextDataRecorder(object):
-    def record_data(self, data, recording_file, mismatch_dir):
+    def record_data(self, data, recording_file, mismatch_dir, mismatch_callback):
         """Record the data
 
         :param data: Some text to record
@@ -182,6 +226,8 @@ class TextDataRecorder(object):
             previous recording exists we save our data to file.
         :param mismatch_file: If an existing recording exist we save the data
             to the mismatch file for later inspection.
+        :param mismatch_callback: A callback function that will be called when
+            a mismatch is detected.
         """
 
         # No recording exist?
@@ -200,11 +246,23 @@ class TextDataRecorder(object):
         if data == recording_data:
             return
 
+        # We have a mismatch
+
         # Save the new data in the mismatch path
         mismatch_file = mismatch_dir.joinpath(recording_file.name)
 
         with io.open(mismatch_file, "w", encoding="utf-8") as text_file:
             text_file.write(data)
+
+        # Call the mismatch callback
+        if mismatch_callback:
+            user_error = mismatch_callback(
+                mismatch_data=data,
+                recording_data=recording_data,
+                mismatch_dir=mismatch_dir,
+            )
+        else:
+            user_error = None
 
         raise DataRecorderError(
             mismatch_data=data,
@@ -212,16 +270,20 @@ class TextDataRecorder(object):
             recording_data=recording_data,
             recording_file=recording_file,
             mismatch_dir=mismatch_dir,
+            user_error=user_error,
         )
 
-    def record_file(self, data_file, recording_file, mismatch_dir):
+    def record_file(self, data_file, recording_file, mismatch_dir, mismatch_callback):
         """Check the file content."""
 
         with io.open(data_file, "r", encoding="utf-8") as text_file:
             data = text_file.read()
 
         self.record_data(
-            data=data, recording_file=recording_file, mismatch_dir=mismatch_dir
+            data=data,
+            recording_file=recording_file,
+            mismatch_dir=mismatch_dir,
+            mismatch_callback=mismatch_callback,
         )
 
 
@@ -229,7 +291,7 @@ class JsonDataRecorder(object):
     def __init__(self):
         self.text_recorder = TextDataRecorder()
 
-    def record_data(self, data, recording_file, mismatch_dir):
+    def record_data(self, data, recording_file, mismatch_dir, mismatch_callback):
         def default(data):
             """The JSON module will call this function for types it does
             not know. We just convert to string an pray it works :)
@@ -242,15 +304,19 @@ class JsonDataRecorder(object):
         )
 
         self.text_recorder.record_data(
-            data=data, recording_file=recording_file, mismatch_dir=mismatch_dir
+            data=data,
+            recording_file=recording_file,
+            mismatch_dir=mismatch_dir,
+            mismatch_callback=mismatch_callback,
         )
 
-    def record_file(self, data_file, recording_file, mismatch_dir):
+    def record_file(self, data_file, recording_file, mismatch_dir, mismatch_callback):
 
         self.text_recorder.record_file(
             data_file=data_file,
             recording_file=recording_file,
             mismatch_dir=mismatch_dir,
+            mismatch_callback=mismatch_callback,
         )
 
 
