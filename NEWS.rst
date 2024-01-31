@@ -6,7 +6,10 @@ of every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Minor: Adding mismatch_context parameter. This allows users to use the
+  same mismatch callback for multiple data recorders. The context can be used
+  to differentiate between the different data recorders. The context is
+  passed to the mismatch callback function and can contain any data.
 
 1.4.0
 -----

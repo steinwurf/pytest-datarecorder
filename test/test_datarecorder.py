@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 
 
 def test_record_json(testdirectory, datarecorder):
-
     recording_path = testdirectory.mkdir("recording")
     recording_file = os.path.join(recording_path.path(), "test.json")
 
@@ -27,7 +26,6 @@ def test_record_json(testdirectory, datarecorder):
 
 
 def test_record_rst(testdirectory, datarecorder):
-
     recording_path = testdirectory.mkdir("recording")
     recording_file = os.path.join(recording_path.path(), "test.rst")
 
@@ -44,19 +42,16 @@ def test_record_rst(testdirectory, datarecorder):
 
 
 def test_record_no_mapping(testdirectory, datarecorder):
-
     recording_path = testdirectory.mkdir("recording")
     recording_file = os.path.join(recording_path.path(), "test.tar.gz")
 
     with pytest.raises(NotImplementedError):
-
         datarecorder.record_data(
             data="{'foo': 2, 'bar': 3}", recording_file=recording_file
         )
 
 
 def test_file_record(testdirectory, datarecorder):
-
     recording_dir = testdirectory.mkdir("recording")
     recording_file = os.path.join(recording_dir.path(), "test.json")
 
@@ -76,7 +71,6 @@ def test_file_record(testdirectory, datarecorder):
 
 
 def test_record_pathlib_path(testdirectory, datarecorder):
-
     recording_dir = testdirectory.mkdir("recording")
     recording_file = os.path.join(recording_dir.path(), "test.json")
 
@@ -94,7 +88,6 @@ def test_record_pathlib_path(testdirectory, datarecorder):
 
 
 def test_recording_type(testdirectory, datarecorder):
-
     input_dir = testdirectory.mkdir("input")
     input_file = input_dir.write_text(
         filename="noextension", data="hello", encoding="utf-8"
@@ -115,7 +108,6 @@ def test_recording_type(testdirectory, datarecorder):
 
 
 def test_record_mismatch(testdirectory, datarecorder):
-
     recording_path = testdirectory.mkdir("recording")
     mismatch_dir = testdirectory.mkdir("mismatch")
     recording_file = os.path.join(recording_path.path(), "test.json")
@@ -127,8 +119,7 @@ def test_record_mismatch(testdirectory, datarecorder):
 
     mismatch_index = []
 
-    def on_mismatch(mismatch_data, recording_data, mismatch_dir):
-
+    def on_mismatch(mismatch_data, recording_data, mismatch_dir, mismatch_context):
         mismatch_data = json.loads(mismatch_data)
         recording_data = json.loads(recording_data)
 
@@ -151,6 +142,8 @@ def test_record_mismatch(testdirectory, datarecorder):
         )
         plt.legend()
 
+        assert mismatch_context == "scatter"
+
         # Save the figure as a PNG image
         plt.savefig(os.path.join(mismatch_dir, "scatter.png"))
 
@@ -165,6 +158,7 @@ def test_record_mismatch(testdirectory, datarecorder):
             recording_file=recording_file,
             mismatch_callback=on_mismatch,
             mismatch_dir=mismatch_dir.path(),
+            mismatch_context="scatter",
         )
 
     assert "Data mismatch at index [0, 3]" in str(e.value)
