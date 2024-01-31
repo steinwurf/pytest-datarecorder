@@ -31,6 +31,7 @@ class DataRecorder(object):
         mismatch_dir=None,
         recording_type=None,
         mismatch_callback=None,
+        mismatch_context=None,
     ):
         """Record and compare data with existing recording.
 
@@ -49,6 +50,7 @@ class DataRecorder(object):
                 - recording_data as a string (the data that was in the recording)
                 - mismatch_data as a string (the data that was recorded)
                 - mismatch_dir as a string (store mismatch artifacts here)
+                - mismatch_context user provided
             The callback can return a string that will be used in the
             mismatch error message.
 
@@ -69,6 +71,7 @@ class DataRecorder(object):
             recording_file=recording_file,
             mismatch_dir=mismatch_dir,
             mismatch_callback=mismatch_callback,
+            mismatch_context=mismatch_context,
         )
 
     def record_file(
@@ -78,6 +81,7 @@ class DataRecorder(object):
         mismatch_dir=None,
         recording_type=None,
         mismatch_callback=None,
+        mismatch_context=None,
     ):
         """Record and compare data with existing recording.
 
@@ -97,6 +101,7 @@ class DataRecorder(object):
                 - recording_data as a string (the data that was in the recording)
                 - mismatch_data as a string (the data that was recorded)
                 - mismatch_dir as a string (store mismatch artifacts here)
+                - mismatch_context user provided
             The callback can return a string that will be used in the
             mismatch error message.
 
@@ -123,10 +128,10 @@ class DataRecorder(object):
             recording_file=recording_file,
             mismatch_dir=mismatch_dir,
             mismatch_callback=mismatch_callback,
+            mismatch_context=mismatch_context,
         )
 
     def _prepare_mismatch_dir(self, mismatch_dir):
-
         # If we do not have a mismatch_dir we provide one
         if mismatch_dir is None:
             mismatch_dir = os.path.join(tempfile.gettempdir(), "datarecorder")
@@ -179,7 +184,6 @@ class DataRecorderError(Exception):
         mismatch_dir,
         user_error,
     ):
-
         # Unified diff expects a list of strings
         recording_lines = recording_data.split("\n")
         mismatch_lines = mismatch_data.split("\n")
@@ -218,7 +222,9 @@ class DataRecorderError(Exception):
 
 
 class TextDataRecorder(object):
-    def record_data(self, data, recording_file, mismatch_dir, mismatch_callback):
+    def record_data(
+        self, data, recording_file, mismatch_dir, mismatch_callback, mismatch_context
+    ):
         """Record the data
 
         :param data: Some text to record
@@ -228,11 +234,11 @@ class TextDataRecorder(object):
             to the mismatch file for later inspection.
         :param mismatch_callback: A callback function that will be called when
             a mismatch is detected.
+        :param mismatch_context: User provided context
         """
 
         # No recording exist?
         if not recording_file.is_file():
-
             # Save the recording
             with io.open(recording_file, "w", encoding="utf-8") as text_file:
                 text_file.write(data)
@@ -260,6 +266,7 @@ class TextDataRecorder(object):
                 mismatch_data=data,
                 recording_data=recording_data,
                 mismatch_dir=mismatch_dir,
+                mismatch_context=mismatch_context,
             )
         else:
             user_error = None
@@ -273,7 +280,14 @@ class TextDataRecorder(object):
             user_error=user_error,
         )
 
-    def record_file(self, data_file, recording_file, mismatch_dir, mismatch_callback):
+    def record_file(
+        self,
+        data_file,
+        recording_file,
+        mismatch_dir,
+        mismatch_callback,
+        mismatch_context,
+    ):
         """Check the file content."""
 
         with io.open(data_file, "r", encoding="utf-8") as text_file:
@@ -284,6 +298,7 @@ class TextDataRecorder(object):
             recording_file=recording_file,
             mismatch_dir=mismatch_dir,
             mismatch_callback=mismatch_callback,
+            mismatch_context=mismatch_context,
         )
 
 
@@ -291,7 +306,9 @@ class JsonDataRecorder(object):
     def __init__(self):
         self.text_recorder = TextDataRecorder()
 
-    def record_data(self, data, recording_file, mismatch_dir, mismatch_callback):
+    def record_data(
+        self, data, recording_file, mismatch_dir, mismatch_callback, mismatch_context
+    ):
         def default(data):
             """The JSON module will call this function for types it does
             not know. We just convert to string an pray it works :)
@@ -308,15 +325,23 @@ class JsonDataRecorder(object):
             recording_file=recording_file,
             mismatch_dir=mismatch_dir,
             mismatch_callback=mismatch_callback,
+            mismatch_context=mismatch_context,
         )
 
-    def record_file(self, data_file, recording_file, mismatch_dir, mismatch_callback):
-
+    def record_file(
+        self,
+        data_file,
+        recording_file,
+        mismatch_dir,
+        mismatch_callback,
+        mismatch_context,
+    ):
         self.text_recorder.record_file(
             data_file=data_file,
             recording_file=recording_file,
             mismatch_dir=mismatch_dir,
             mismatch_callback=mismatch_callback,
+            mismatch_context=mismatch_context,
         )
 
 
