@@ -146,8 +146,23 @@ def test_record_mismatch(testdirectory, datarecorder):
             mismatch_context="scatter",
         )
 
+        assert e.user_error is True
+
     assert "Data mismatch at index [0, 3]" in str(e.value)
     assert mismatch_index == [0, 3]
 
     # Check that the mismatch directory contains the files
     assert mismatch_dir.contains_file("scatter.json")
+
+    def on_mismatch(mismatch_data, recording_data, mismatch_dir, mismatch_context):
+        return "Data mismatch"
+
+    with pytest.raises(pytest_datarecorder.datarecorder.DataRecorderError) as e:
+        datarecorder.record_data(
+            data=[5, 2, 3, 1, 5],
+            recording_file=recording_file,
+            mismatch_callback=on_mismatch,
+            mismatch_dir=mismatch_dir.path(),
+        )
+
+        assert e.user_error == "Data mismatch"
