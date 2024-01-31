@@ -6,7 +6,7 @@ of every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Minor: Added access to the user_error on the exception object
 
 1.5.0
 -----

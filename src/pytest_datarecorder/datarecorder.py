@@ -218,6 +218,9 @@ class DataRecorderError(Exception):
         if user_error:
             result += f"{user_error}\n"
 
+            # Make sure we can ass only the user error if we want
+            self.user_error = user_error
+
         super(DataRecorderError, self).__init__(result)
 
 
