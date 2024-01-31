@@ -130,7 +130,7 @@ def test_record_mismatch(testdirectory, datarecorder):
         mismatch_file = os.path.join(mismatch_dir, "scatter.json")
 
         with open(mismatch_file, "w") as f:
-            json.dump(mismatch_data, f)
+            json.dump(mismatch_index, f)
 
         return (
             f"Data mismatch at index {mismatch_index}"
