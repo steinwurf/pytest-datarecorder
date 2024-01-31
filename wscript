@@ -24,7 +24,6 @@ class UploadContext(BuildContext):
 
 
 def options(opt):
-
     opt.add_option(
         "--run_tests", default=False, action="store_true", help="Run all unit tests"
     )
@@ -37,7 +36,6 @@ def options(opt):
 
 
 def build(bld):
-
     # Create a virtualenv in the source folder and build universal wheel
 
     with bld.create_virtualenv() as venv:
@@ -94,7 +92,6 @@ def prepare_release(ctx):
 
 
 def _pytest(bld, venv):
-
     # To update the requirements.txt just delete it - a fresh one
     # will be generated from test/requirements.in
     # Ensure that the requirements.txt is up to date
@@ -126,6 +123,3 @@ def _pytest(bld, venv):
     # in the file system and make some tests pass although their .py
     # counter-part has been e.g. deleted
     venv.run(f"python -B -m pytest {testdir.abspath()} --basetemp {basetemp}")
-
-    # Check the package
-    venv.run(f"twine check {wheel}")
