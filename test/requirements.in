@@ -1,5 +1,3 @@
 pytest
 pytest-testdirectory
 twine
-pandas
-matplotlib

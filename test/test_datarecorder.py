@@ -3,8 +3,6 @@ import os
 import pytest
 import pathlib
 import json
-import pandas as pd
-import matplotlib.pyplot as plt
 
 
 def test_record_json(testdirectory, datarecorder):
@@ -127,29 +125,16 @@ def test_record_mismatch(testdirectory, datarecorder):
             if d != r:
                 mismatch_index.append(i)
 
-        # Create the DataFrame
-        df = pd.DataFrame({"X": mismatch_data, "Y": recording_data})
-
-        plt.scatter(
-            list(range(len(mismatch_data))), mismatch_data, label="Mismatch", marker="x"
-        )
-
-        plt.scatter(
-            list(range(len(recording_data))),
-            recording_data,
-            label="Recording",
-            marker="+",
-        )
-        plt.legend()
-
         assert mismatch_context == "scatter"
 
-        # Save the figure as a PNG image
-        plt.savefig(os.path.join(mismatch_dir, "scatter.png"))
+        mismatch_file = os.path.join(mismatch_dir, "scatter.png")
+
+        with open(mismatch_file, "w") as f:
+            json.dump(mismatch_data, f)
 
         return (
             f"Data mismatch at index {mismatch_index}"
-            f" see {os.path.join(mismatch_dir, 'scatter.png')} for details"
+            f" see {mismatch_file} for details"
         )
 
     with pytest.raises(pytest_datarecorder.datarecorder.DataRecorderError) as e:
