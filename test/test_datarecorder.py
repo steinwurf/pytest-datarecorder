@@ -127,7 +127,7 @@ def test_record_mismatch(testdirectory, datarecorder):
 
         assert mismatch_context == "scatter"
 
-        mismatch_file = os.path.join(mismatch_dir, "scatter.png")
+        mismatch_file = os.path.join(mismatch_dir, "scatter.json")
 
         with open(mismatch_file, "w") as f:
             json.dump(mismatch_data, f)
@@ -150,4 +150,4 @@ def test_record_mismatch(testdirectory, datarecorder):
     assert mismatch_index == [0, 3]
 
     # Check that the mismatch directory contains the files
-    assert mismatch_dir.contains_file("scatter.png")
+    assert mismatch_dir.contains_file("scatter.json")
