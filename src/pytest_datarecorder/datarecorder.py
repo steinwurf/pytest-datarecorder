@@ -221,6 +221,12 @@ class DataRecorderError(Exception):
             # Make sure we can ass only the user error if we want
             self.user_error = user_error
 
+        self.mismatch_data = mismatch_data
+        self.mismatch_file = mismatch_file
+        self.recording_data = recording_data
+        self.recording_file = recording_file
+        self.mismatch_dir = mismatch_dir
+
         super(DataRecorderError, self).__init__(result)
 
 

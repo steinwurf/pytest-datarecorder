@@ -8,6 +8,10 @@ Latest
 ------
 * tbd
 
+1.7.0
+-----
+* Minor: Added more context to the DataRecorderError exception.
+
 1.6.0
 -----
 * Minor: Added access to the user_error on the exception object

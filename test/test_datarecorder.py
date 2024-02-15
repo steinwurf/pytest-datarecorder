@@ -166,3 +166,8 @@ def test_record_mismatch(testdirectory, datarecorder):
         )
 
         assert e.user_error == "Data mismatch"
+        assert e.mismatch_data is not None
+        assert e.mismatch_file is not None
+        assert e.recording_data is not None
+        assert e.recording_file is not None
+        assert e.mismatch_dir == mismatch_dir.path()
