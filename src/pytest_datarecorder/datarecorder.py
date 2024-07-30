@@ -184,50 +184,56 @@ class DataRecorderError(Exception):
         mismatch_dir,
         user_error,
     ):
-        # Unified diff expects a list of strings
-        recording_lines = recording_data.split("\n")
-        mismatch_lines = mismatch_data.split("\n")
 
-        diff = difflib.unified_diff(
-            a=recording_lines,
-            b=mismatch_lines,
-            fromfile=str(recording_file),
-            tofile=str(mismatch_file),
+        error = (
+            f"Data mismatch between {recording_file} and {mismatch_file}\n"
+            f"User error: {user_error}\n"
         )
 
-        # Unified_diff(...) returns a generator so we need to force the
-        # data by interation - and then convert back to one string
-        diff = "\n".join(list(diff))
+        # # Unified diff expects a list of strings
+        # recording_lines = recording_data.split("\n")
+        # mismatch_lines = mismatch_data.split("\n")
 
-        # Some differences are not easy to see with the unified diff console
-        # output e.g. trailing white-spaces etc. So we also dump a HTML diff
-        # output
-        html_diff = difflib.HtmlDiff().make_file(
-            fromlines=recording_lines,
-            tolines=mismatch_lines,
-            fromdesc=recording_file,
-            todesc=mismatch_file,
-        )
-        html_file = mismatch_dir.joinpath("diff.html")
+        # diff = difflib.unified_diff(
+        #     a=recording_lines,
+        #     b=mismatch_lines,
+        #     fromfile=str(recording_file),
+        #     tofile=str(mismatch_file),
+        # )
 
-        with io.open(html_file, "w", encoding="utf-8") as html_fp:
-            html_fp.write(html_diff)
+        # # Unified_diff(...) returns a generator so we need to force the
+        # # data by interation - and then convert back to one string
+        # diff = "\n".join(list(diff))
 
-        result = "Diff:\n{}\nHTML diff:\n{}\n".format(diff, html_file)
+        # # Some differences are not easy to see with the unified diff console
+        # # output e.g. trailing white-spaces etc. So we also dump a HTML diff
+        # # output
+        # html_diff = difflib.HtmlDiff().make_file(
+        #     fromlines=recording_lines,
+        #     tolines=mismatch_lines,
+        #     fromdesc=recording_file,
+        #     todesc=mismatch_file,
+        # )
+        # html_file = mismatch_dir.joinpath("diff.html")
 
-        if user_error:
-            result += f"{user_error}\n"
+        # with io.open(html_file, "w", encoding="utf-8") as html_fp:
+        #     html_fp.write(html_diff)
 
-            # Make sure we can ass only the user error if we want
-            self.user_error = user_error
+        # result = "Diff:\n{}\nHTML diff:\n{}\n".format(diff, html_file)
 
-        self.mismatch_data = mismatch_data
-        self.mismatch_file = mismatch_file
-        self.recording_data = recording_data
-        self.recording_file = recording_file
-        self.mismatch_dir = mismatch_dir
+        # if user_error:
+        #     result += f"{user_error}\n"
 
-        super(DataRecorderError, self).__init__(result)
+        #     # Make sure we can ass only the user error if we want
+        #     self.user_error = user_error
+
+        # self.mismatch_data = mismatch_data
+        # self.mismatch_file = mismatch_file
+        # self.recording_data = recording_data
+        # self.recording_file = recording_file
+        # self.mismatch_dir = mismatch_dir
+
+        super(DataRecorderError, self).__init__(error)
 
 
 class TextDataRecorder(object):
