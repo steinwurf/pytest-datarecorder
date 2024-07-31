@@ -6,6 +6,10 @@ of every change, see the Git log.
 
 Latest
 ------
+* tbd
+
+2.0.0
+-----
 * Major: Removed the default diffs on mismatch. The user can provide those
   themselves in the mismatch callback function.
 * Minor: Reorgnaized the internal structure of the data recorder to make it
