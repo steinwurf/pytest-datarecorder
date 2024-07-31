@@ -40,7 +40,7 @@ class RecorderOptions:
 
         if not self.recording_type in extension_map:
             raise NotImplementedError(
-                "We have no mapping for {}".format(recording_type)
+                f"We have no mapping for recording type {recording_type}"
             )
 
         self.mismatch_callback = mismatch_callback
