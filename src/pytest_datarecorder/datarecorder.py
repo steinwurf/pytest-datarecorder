@@ -183,7 +183,7 @@ class DataRecorderError(Exception):
     ):
 
         error = (
-            f"Data mismatch between {recording_file} and {mismatch_file}\n"
+            f"Data mismatch between {recording_file} and {mismatch_file}. "
             f"User error: {user_error}\n"
         )
 
